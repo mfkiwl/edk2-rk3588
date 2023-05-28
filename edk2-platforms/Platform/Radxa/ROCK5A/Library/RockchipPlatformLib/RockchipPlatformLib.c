@@ -228,10 +228,9 @@ UsbDpPhyEnable (
   MmioWrite32 (0xfd5cc00c, 0x00030001);
 }
 
-/* ROCK5A does not have PCIe3.0, wait for PCIe2 support and re-add it.
 VOID
 EFIAPI
-Pcie30IoInit(VOID)
+Pcie20IoInit(UINTN PcieSegment)
 {
   // Set reset and power IO to gpio output mode
   GpioPinSetDirection (4, GPIO_PIN_PB6, GPIO_PIN_OUTPUT);
@@ -240,7 +239,7 @@ Pcie30IoInit(VOID)
 
 VOID
 EFIAPI
-Pcie30PowerEn(VOID)
+Pcie20PowerEn(UINTN PcieSegment, BOOLEAN Enable)
 {
   // output high to enable power
   GpioPinWrite (1, GPIO_PIN_PA4, TRUE);
@@ -248,14 +247,13 @@ Pcie30PowerEn(VOID)
 
 VOID
 EFIAPI
-Pcie30PeReset(BOOLEAN enable)
+Pcie20PeReset(UINTN PcieSegment, BOOLEAN enable)
 {
   if(enable)
     GpioPinWrite (4, GPIO_PIN_PB6, FALSE); // output low
   else
     GpioPinWrite (4, GPIO_PIN_PB6, TRUE); // output high
 }
-*/
 
 VOID
 EFIAPI

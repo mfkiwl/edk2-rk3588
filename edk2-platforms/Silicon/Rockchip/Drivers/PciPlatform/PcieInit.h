@@ -29,13 +29,10 @@
 #error "Unexpected __SIZEOF_POINTER__"
 #endif
 
-
 #define upper_32_bits(n) ((UINT32)(((n) >> 16) >> 16))
 #define lower_32_bits(n) ((UINT32)(n))
 #define GENMASK(h, l) \
 	(((~0UL) - (1UL << (l)) + 1) & (~0UL >> (BITS_PER_LONG - 1 - (h))))
-
-
 
 extern EFI_GUID gEfiPcieRootBridgeProtocolGuid;
 
@@ -43,11 +40,10 @@ struct rk_pcie {
 	UINTN dbi_base;
 	UINTN apb_base;
 	UINTN cfg_base;
-	UINT32 first_busno;
-	UINT32	gen;
-	UINT32	lane;
+	UINT32 pcie_segment;
+	UINT32 gen;
+	UINT32 lane;
 };
-
 
 enum {
 	PCIBIOS_SUCCESSFUL = 0x0000,
@@ -128,18 +124,18 @@ enum {
 #define LINK_WAIT_MAX_IATU_RETRIES	5
 #define LINK_WAIT_IATU			10000
 
-#define  PCI_BASE_ADDRESS_MEM_TYPE_64 0x04    /* 64 bit address */
+#define PCI_BASE_ADDRESS_MEM_TYPE_64 0x04    /* 64 bit address */
 #define PCI_BASE_ADDRESS_0      0x10    /* 32 bits */
 #define PCI_BASE_ADDRESS_1      0x14    /* 32 bits [htype 0,1 only] */
 #define PCI_INTERRUPT_LINE      0x3c    /* 8 bits */
 #define PCI_PRIMARY_BUS         0x18    /* Primary bus number */
 #define PCI_COMMAND             0x04    /* 16 bits */
-#define PCI_COMMAND_MEMORY     0x2     /* Enable response in Memory space */
+#define PCI_COMMAND_MEMORY      0x2     /* Enable response in Memory space */
 #define PCI_COMMAND_SERR		0x100	/* Enable SERR */
-#define  PCI_COMMAND_MASTER     0x4     /* Enable bus mastering */
-#define  PCI_COMMAND_IO         0x1     /* Enable response in I/O space */
-#define PCI_CLASS_BRIDGE_PCI               0x0604
-#define PCI_CLASS_DEVICE       0x0a    /* Device class */
+#define PCI_COMMAND_MASTER      0x4     /* Enable bus mastering */
+#define PCI_COMMAND_IO          0x1     /* Enable response in I/O space */
+#define PCI_CLASS_BRIDGE_PCI    0x0604
+#define PCI_CLASS_DEVICE        0x0a    /* Device class */
 
 /* 3.0 PHY Register for RK3588 */
 #define PHP_GRF_PCIESEL_CON 0x100
@@ -149,6 +145,13 @@ enum {
 #define RK3588_SRAM_INIT_DONE(reg) (reg & BIT(0))
 
 #define PHY_MODE_PCIE_AGGREGATION 4     /* PCIe3x4 */
+
+#define PCIE_SEGMENT_PCIE20L0 0
+#define PCIE_SEGMENT_PCIE20L1 1
+#define PCIE_SEGMENT_PCIE20L2 2
+
+#define PCIE_SEGMENT_PCIE30X2 3
+#define PCIE_SEGMENT_PCIE30X4 4
 
 #endif
 

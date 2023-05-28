@@ -23,7 +23,6 @@
 extern VOID PcieRegWrite(UINT32 Port, UINTN Offset, UINT32 Value);
 extern EFI_STATUS PciePortReset(UINT32 HostBridgeNum, UINT32 Port);
 
-
 static UINTN rk_pcie_read(UINTN addr, UINTN size, UINT32 *val)
 {
 	if ((UINTN)addr & (size - 1)) {
@@ -121,10 +120,35 @@ static inline void rk_pcie_dbi_write_enable(struct rk_pcie *rk_pcie, BOOLEAN en)
 	MmioWrite32(rk_pcie->dbi_base + PCIE_MISC_CONTROL_1_OFF, val);
 }
 
+static void rk_pcie_setup_clocks(struct rk_pcie *rk_pcie)
+{
+	switch(rk_pcie->pcie_segment) {
+		case PCIE_SEGMENT_PCIE30X4:
+			MmioWrite32(0xFD7C0A80, 0xffff0000);  //CRU_SOFTRST_CON32
+			MmioWrite32(0xFD7C0A84, 0xffff0000);  //CRU_SOFTRST_CON33
+			MmioWrite32(0xFD7C0A88, 0xffff0000);  //CRU_SOFTRST_CON34
+			MmioWrite32(0xFD7C0880, 0xffff0000);  //CRU_GATE_CON32
+			MmioWrite32(0xFD7C0884, 0xffff0000);  //CRU_GATE_CON33
+			MmioWrite32(0xFD7C0888, 0xffff0000);  //CRU_GATE_CON34
+			MmioWrite32(0xFD7C0898, 0xffff0000);  //CRU_GATE_CON38
+			MmioWrite32(0xFD7C089c, 0xffff0000);  //CRU_GATE_CON39
+			
+			MmioWrite32(0xFD7C8A00, (0x1 << 24)); //PHPTOPCRU_SOFTRST_CON00
+			MmioWrite32(0xFD7C8800, 0xffff0000);  //PHPTOPCRU_GATE_CON00
+			break;
+		case PCIE_SEGMENT_PCIE20L0:
+		case PCIE_SEGMENT_PCIE20L1:
+		case PCIE_SEGMENT_PCIE20L2:
+
+		case PCIE_SEGMENT_PCIE30X2:
+
+		default:
+			break;
+	}
+}
 
 static void rk_pcie_setup_host(struct rk_pcie *rk_pcie)
 {
-
 	UINT32 val;
 
 	rk_pcie_dbi_write_enable(rk_pcie, TRUE);	
@@ -237,7 +261,6 @@ static int rk_pcie_link_up(struct rk_pcie *priv, UINT32 cap_speed)
 {
 	int retries;
 
-	
 	if (is_link_up(priv)) {
 		DEBUG((EFI_D_ERROR, "PCI Link already up before configuration!\n"));
 		return 1;
@@ -282,51 +305,45 @@ static int rockchip_pcie_init_port(struct rk_pcie *priv)
 	int ret;
 	UINT32 val;
 
+	if(priv->gen == 3) {
+		/* RK3588 PCIe3*/
+		Pcie30IoInit();
+		
+		/* Rest the device */
+		Pcie30PeReset(TRUE);
 
-	/* RK3588 EVB1 PCIe3L4*/
-	Pcie30IoInit();
-	
-	/* Rest the device */
-	Pcie30PeReset(TRUE);
-	
-	/* Set power and maybe external ref clk input */
-	Pcie30PowerEn();
-	msleep(100000);
+		/* Set power and maybe external ref clk input */
+		Pcie30PowerEn();
+		msleep(100000);
 
-	//DEBUG((EFI_D_ERROR, "0xFD5F8070 = 0x%x, 0xFEC4000c = 0x%x, 0xFEC50004 = 0x%x\n", 0));
+		//DEBUG((EFI_D_ERROR, "0xFD5F8070 = 0x%x, 0xFEC4000c = 0x%x, 0xFEC50004 = 0x%x\n", 0));
 
-	/* Disable power domain */
-	MmioWrite32(0xFD8D8150, 0x1 << 23 | 0x1 << 21); //PD_PCIE & PD_PHP
-					 
-	/* FixMe init 3.0 PHY */
-	/* Phy mode: Aggregation NBNB */
-	MmioWrite32(0xfd5b8000 + RK3588_PCIE3PHY_GRF_CMN_CON0, (0x7 << 16) | PHY_MODE_PCIE_AGGREGATION);
+		/* Disable power domain */
+		MmioWrite32(0xFD8D8150, 0x1 << 23 | 0x1 << 21); // PD_PCIE & PD_PHP
+						
+		/* FixMe init 3.0 PHY */
+		/* Phy mode: Aggregation NBNB */
+		MmioWrite32(0xfd5b8000 + RK3588_PCIE3PHY_GRF_CMN_CON0, (0x7 << 16) | PHY_MODE_PCIE_AGGREGATION);
 
-	/* 开控制器和phy时钟,撤销复位        */
-	MmioWrite32(0xFD7C0A80, 0xffff0000);  //CRU_SOFTRST_CON32
-	MmioWrite32(0xFD7C0A84, 0xffff0000);  //CRU_SOFTRST_CON33
-	MmioWrite32(0xFD7C0A88, 0xffff0000);  //CRU_SOFTRST_CON34
-	MmioWrite32(0xFD7C0880, 0xffff0000);  //CRU_GATE_CON32
-	MmioWrite32(0xFD7C0884, 0xffff0000);  //CRU_GATE_CON33
-	MmioWrite32(0xFD7C0888, 0xffff0000);  //CRU_GATE_CON34
-	MmioWrite32(0xFD7C0898, 0xffff0000);  //CRU_GATE_CON38
-	MmioWrite32(0xFD7C089c, 0xffff0000);  //CRU_GATE_CON39
-	
-	MmioWrite32(0xFD7C8A00, (0x1 << 24));  //PHPTOPCRU_SOFTRST_CON00
-	MmioWrite32(0xFD7C8800, 0xffff0000);  //PHPTOPCRU_GATE_CON00
+		/* 开控制器和phy时钟,撤销复位        */
+		rk_pcie_setup_clocks(priv);
 
-	/* PHY复位 */
-	MmioWrite32(0xFD7C8A00, (0x1 << 10) | (0x1 << 26)); 
+		/* PHY Reset */
+		MmioWrite32(0xFD7C8A00, (0x1 << 10) | (0x1 << 26)); 
 
-	msleep(10);
-	
-	/* Deassert PCIe PMA output clamp mode */
-	MmioWrite32(0xfd5b8000 + RK3588_PCIE3PHY_GRF_CMN_CON0, (0x1 << 8) | (0x1 << 24));
+		msleep(10);
+		
+		/* Deassert PCIe PMA output clamp mode */
+		MmioWrite32(0xfd5b8000 + RK3588_PCIE3PHY_GRF_CMN_CON0, (0x1 << 8) | (0x1 << 24));
 
-	/* 撤销PHY复位 */
-	MmioWrite32(0xFD7C8A00, (0x1 << 26)); 
-	
-	/* 配置PHY:  3.0 PHY不用配置 */
+		/* Deassert PHY Reset */
+		MmioWrite32(0xFD7C8A00, (0x1 << 26)); 
+	} else {
+		Pcie20IoInit(priv->pcie_segment);
+		Pcie20PeReset(priv->pcie_segment, TRUE);
+		Pcie20PowerEn(priv->pcie_segment);
+		rk_pcie_setup_clocks(priv);
+	}
 						 
 	/* LTSSM EN ctrl mode */
 	val = rk_pcie_readl_apb(priv, PCIE_CLIENT_HOT_RESET_CTRL);
@@ -337,9 +354,8 @@ static int rockchip_pcie_init_port(struct rk_pcie *priv)
 	rk_pcie_dbi_write_enable(priv, TRUE);	
 	rk_pcie_writel_apb(priv, 0x0, 0xf00000);
 	MmioWrite32(0xf50002ec, 0xfffff0);
-	MmioWrite32(0xf50002f0, 0x13c0); //BAR0 resize 512G
+	MmioWrite32(0xf50002f0, 0x13c0); // BAR0 resize 512G
 	//io -4 0xa400008bc 0x77f41
-
 
 	rk_pcie_writel_apb(priv, 0x0, 0xf00040);
 
@@ -378,9 +394,10 @@ PcieInitEntry (
 
 	memset(priv, 0, sizeof(struct rk_pcie));
 
-	/* 先调试3L4，配置Gen 3 */
+	// TODO: Don't hard coding here
 	priv->gen = 3;
 	priv->lane = 4;
+	priv->pcie_segment = PCIE_SEGMENT_PCIE30X4;
 	priv->dbi_base = PcdGet64(PcdPcieRootPort3x4DbiBaseAddress);
 	priv->apb_base = PcdGet64(PcdPcieRootPort3x4ApbBaseAddress);
 	priv->cfg_base = PcdGet64(PcdPcieRootPort3x4CfgBaseAddress);
