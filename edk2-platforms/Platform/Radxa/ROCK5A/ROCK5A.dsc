@@ -248,7 +248,7 @@
   #
   # DWC3 controller
   #
-  gRockchipTokenSpaceGuid.PcdDwc3BaseAddresses|{ UINT32(0xfc000000), UINT32(0xfc400000), UINT32(0xfcd00000) }
+  gRockchipTokenSpaceGuid.PcdDwc3BaseAddresses|{ UINT32(0xfc000000), UINT32(0xfcd00000) }
   gRockchipTokenSpaceGuid.PcdDwc3Size|0x400000
 
   #
