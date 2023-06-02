@@ -257,6 +257,24 @@ Pcie20PeReset(UINTN PcieSegment, BOOLEAN enable)
 
 VOID
 EFIAPI
+Pcie30IoInit(VOID)
+{
+}
+
+VOID
+EFIAPI
+Pcie30PowerEn(VOID)
+{
+}
+
+VOID
+EFIAPI
+Pcie30PeReset(BOOLEAN enable)
+{
+}
+
+VOID
+EFIAPI
 PlatformEarlyInit (
   VOID
   )

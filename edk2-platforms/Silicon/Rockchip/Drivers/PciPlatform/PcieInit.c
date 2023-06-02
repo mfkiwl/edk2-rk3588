@@ -7,6 +7,7 @@
 **/
 
 #include "PcieInit.h"
+#include <Library/Pcie.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/PcdLib.h>
 #include <Library/OemMiscLib.h>
@@ -122,29 +123,33 @@ static inline void rk_pcie_dbi_write_enable(struct rk_pcie *rk_pcie, BOOLEAN en)
 
 static void rk_pcie_setup_clocks(struct rk_pcie *rk_pcie)
 {
+	MmioWrite32(0xFD7C0A80, 0xffff0000);  //CRU_SOFTRST_CON32
+	MmioWrite32(0xFD7C0A84, 0xffff0000);  //CRU_SOFTRST_CON33
+	MmioWrite32(0xFD7C0A88, 0xffff0000);  //CRU_SOFTRST_CON34
+	MmioWrite32(0xFD7C0880, 0xffff0000);  //CRU_GATE_CON32
+	MmioWrite32(0xFD7C0884, 0xffff0000);  //CRU_GATE_CON33
+	MmioWrite32(0xFD7C0888, 0xffff0000);  //CRU_GATE_CON34
+	MmioWrite32(0xFD7C0898, 0xffff0000);  //CRU_GATE_CON38
+	MmioWrite32(0xFD7C089c, 0xffff0000);  //CRU_GATE_CON39
 	switch(rk_pcie->pcie_segment) {
 		case PCIE_SEGMENT_PCIE30X4:
-			MmioWrite32(0xFD7C0A80, 0xffff0000);  //CRU_SOFTRST_CON32
-			MmioWrite32(0xFD7C0A84, 0xffff0000);  //CRU_SOFTRST_CON33
-			MmioWrite32(0xFD7C0A88, 0xffff0000);  //CRU_SOFTRST_CON34
-			MmioWrite32(0xFD7C0880, 0xffff0000);  //CRU_GATE_CON32
-			MmioWrite32(0xFD7C0884, 0xffff0000);  //CRU_GATE_CON33
-			MmioWrite32(0xFD7C0888, 0xffff0000);  //CRU_GATE_CON34
-			MmioWrite32(0xFD7C0898, 0xffff0000);  //CRU_GATE_CON38
-			MmioWrite32(0xFD7C089c, 0xffff0000);  //CRU_GATE_CON39
-			
 			MmioWrite32(0xFD7C8A00, (0x1 << 24)); //PHPTOPCRU_SOFTRST_CON00
-			MmioWrite32(0xFD7C8800, 0xffff0000);  //PHPTOPCRU_GATE_CON00
 			break;
 		case PCIE_SEGMENT_PCIE20L0:
+			MmioWrite32(0xFD7C8A00, (0x1 << 21)|(0x1 << 18)); //PHPTOPCRU_SOFTRST_CON00
+			break;
 		case PCIE_SEGMENT_PCIE20L1:
+			MmioWrite32(0xFD7C8A00, (0x1 << 22)|(0x1 << 19)); //PHPTOPCRU_SOFTRST_CON00
+			break;
 		case PCIE_SEGMENT_PCIE20L2:
+			MmioWrite32(0xFD7C8A00, (0x1 << 23)|(0x1 << 20)); //PHPTOPCRU_SOFTRST_CON00
+			break;
 
 		case PCIE_SEGMENT_PCIE30X2:
-
 		default:
 			break;
 	}
+	MmioWrite32(0xFD7C8800, 0xffff0000);  //PHPTOPCRU_GATE_CON00
 }
 
 static void rk_pcie_setup_host(struct rk_pcie *rk_pcie)
@@ -270,7 +275,9 @@ static int rk_pcie_link_up(struct rk_pcie *priv, UINT32 cap_speed)
 	rk_pcie_configure(priv, cap_speed);
 			 
 	/* Release the device */
-	Pcie30PeReset(FALSE);
+	if(priv->gen == 3)
+		Pcie30PeReset(FALSE);
+	else Pcie20PeReset(priv->pcie_segment, FALSE);
 
 	rk_pcie_disable_ltssm(priv);
 
@@ -341,38 +348,53 @@ static int rockchip_pcie_init_port(struct rk_pcie *priv)
 	} else {
 		Pcie20IoInit(priv->pcie_segment);
 		Pcie20PeReset(priv->pcie_segment, TRUE);
-		Pcie20PowerEn(priv->pcie_segment);
+		Pcie20PowerEn(priv->pcie_segment, TRUE);
 		rk_pcie_setup_clocks(priv);
 	}
+
+	DEBUG((EFI_D_ERROR, "-- 1 --\n"));
 						 
 	/* LTSSM EN ctrl mode */
 	val = rk_pcie_readl_apb(priv, PCIE_CLIENT_HOT_RESET_CTRL);
 	val |= PCIE_LTSSM_ENABLE_ENHANCE | (PCIE_LTSSM_ENABLE_ENHANCE << 16);
 	rk_pcie_writel_apb(priv, PCIE_CLIENT_HOT_RESET_CTRL, val);
 
+	DEBUG((EFI_D_ERROR, "-- 2 --\n"));
+
 	/* Set RC mode */
 	rk_pcie_dbi_write_enable(priv, TRUE);	
+	DEBUG((EFI_D_ERROR, "-- 2.1 --\n"));
 	rk_pcie_writel_apb(priv, 0x0, 0xf00000);
-	MmioWrite32(0xf50002ec, 0xfffff0);
-	MmioWrite32(0xf50002f0, 0x13c0); // BAR0 resize 512G
+	DEBUG((EFI_D_ERROR, "-- 2.2 --\n"));
+	MmioWrite32(priv->cfg_base + 0x2ec, 0xfffff0);
+	DEBUG((EFI_D_ERROR, "-- 2.3 --\n"));
+	MmioWrite32(priv->cfg_base + 0x2f0, 0x13c0); // BAR0 resize 512G
+	DEBUG((EFI_D_ERROR, "-- 2.4 --\n"));
 	//io -4 0xa400008bc 0x77f41
+
+	DEBUG((EFI_D_ERROR, "-- 3 --\n"));
 
 	rk_pcie_writel_apb(priv, 0x0, 0xf00040);
 
 	rk_pcie_setup_host(priv);
+
+	DEBUG((EFI_D_ERROR, "-- 4 --\n"));
 			 
 	ret = rk_pcie_link_up(priv, priv->gen);
-	if (ret < 0)
+
+	DEBUG((EFI_D_ERROR, "-- 5 --\n"));
+	if (ret < 0) {
+		DEBUG((EFI_D_ERROR, "-- 6 --\n"));
 		return ret;
+	}
 
 	DEBUG((EFI_D_ERROR, "PCIe Init sucessfully (Gen%d-x%d, Bus%d)\n",
-			rk_pcie_get_link_speed(priv),rk_pcie_get_link_width(priv)));
+		rk_pcie_get_link_speed(priv), rk_pcie_get_link_width(priv), priv->pcie_segment));
 	rk_pcie_dbi_write_enable(priv, TRUE);
 	msleep(10000);
 
 	return 0;
 }
-
 
 EFI_STATUS
 PcieInitEntry (
@@ -384,30 +406,49 @@ PcieInitEntry (
 	struct rk_pcie *priv;
 	int ret;
 
-
 	priv  = (struct rk_pcie *)AllocatePool (sizeof (struct rk_pcie));
 	if (priv == NULL) {
 		DEBUG((EFI_D_ERROR, "Failed to allocate priv memory!\n"));
   		return EFI_OUT_OF_RESOURCES;
 	}
 
+	for(int i = 0; i < NUM_PCIE_CONTROLLER; i++) {
+		if(!IsPcieNumEnabled(i))
+			continue;
 
-	memset(priv, 0, sizeof(struct rk_pcie));
+		memset(priv, 0, sizeof(struct rk_pcie));
 
-	// TODO: Don't hard coding here
-	priv->gen = 3;
-	priv->lane = 4;
-	priv->pcie_segment = PCIE_SEGMENT_PCIE30X4;
-	priv->dbi_base = PcdGet64(PcdPcieRootPort3x4DbiBaseAddress);
-	priv->apb_base = PcdGet64(PcdPcieRootPort3x4ApbBaseAddress);
-	priv->cfg_base = PcdGet64(PcdPcieRootPort3x4CfgBaseAddress);
+		switch(i) {
+			case PCIE_SEGMENT_PCIE30X4:
+				priv->gen = 3;
+				priv->lane = 4;
+				break;
+			case PCIE_SEGMENT_PCIE30X2:
+				priv->gen = 3;
+				priv->lane = 2;
+				break;
+			case PCIE_SEGMENT_PCIE20L0:
+			case PCIE_SEGMENT_PCIE20L1:
+			case PCIE_SEGMENT_PCIE20L2:
+			default:
+				priv->gen = 2;
+				priv->lane = 1;
+				break;
+		}
 
-	DEBUG((EFI_D_ERROR, "dbi_base = 0x%lx   apb_base = 0x%lx  cfg_base = 0x%lx\n",
-		priv->dbi_base, priv->apb_base, priv->cfg_base));	
+		priv->pcie_segment = i;
+		priv->dbi_base = PCIE_SEG0_DBI_BASE + (i * PCIE_DBI_SIZE);
+		priv->apb_base = PCIE_SEG0_APB_BASE + (i * PCIE_APB_SIZE);
+		priv->cfg_base = PCIE_SEG0_CFG_BASE + (i * PCIE_CFG_BASE_DIFF);
 
-	ret = rockchip_pcie_init_port(priv);
-	if (ret < 0)
-		return EFI_NO_MEDIA;
+		DEBUG((EFI_D_ERROR, "pcie_segment = %d, dbi_base = 0x%lx, apb_base = 0x%lx, cfg_base = 0x%lx\n",
+			priv->pcie_segment, priv->dbi_base, priv->apb_base, priv->cfg_base));	
+
+		ret = rockchip_pcie_init_port(priv);
+
+		if (ret < 0)
+			Status |= EFI_NO_MEDIA;
+	}
 
     return Status;
 }

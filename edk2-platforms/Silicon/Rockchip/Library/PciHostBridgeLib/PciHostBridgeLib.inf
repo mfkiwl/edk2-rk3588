@@ -23,6 +23,8 @@
   MdeModulePkg/MdeModulePkg.dec
   MdePkg/MdePkg.dec
   Silicon/Rockchip/RockchipPkg.dec
+  
+  Silicon/Rockchip/RK3588/RK3588.dec
 
 [LibraryClasses]
   BaseLib
@@ -33,6 +35,8 @@
   UefiBootServicesTableLib
 
 [FixedPcd]
+  gRockchipTokenSpaceGuid.PcdPcieRootPort3x4CfgBaseAddress
+  gRockchipTokenSpaceGuid.PcdPcieRootPort3x4CfgSize
   gRockchipTokenSpaceGuid.PcdPcieRootPort3x4IoBaseAddress
   gRockchipTokenSpaceGuid.PcdPcieRootPort3x4IoSize
   gRockchipTokenSpaceGuid.PcdPcieRootPort3x4MemBaseAddress
@@ -41,7 +45,12 @@
   gRockchipTokenSpaceGuid.PcdPcieRootPort3x4MemSize64
   gArmTokenSpaceGuid.PcdPciIoBase
   gArmTokenSpaceGuid.PcdPciIoSize
+  gRK3588TokenSpaceGuid.PcdSocIs3588S
 
+[Pcd]
+  gRK3588TokenSpaceGuid.PcdComboPhy0Mode
+  gRK3588TokenSpaceGuid.PcdComboPhy1Mode
+  gRK3588TokenSpaceGuid.PcdComboPhy2Mode
 
 [Protocols]
   gEfiCpuIo2ProtocolGuid

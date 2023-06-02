@@ -13,6 +13,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/PcdLib.h>
 #include <Library/PciHostBridgeLib.h>
+#include <Library/Pcie.h>
 #include <Protocol/PciHostBridgeResourceAllocation.h>
 #include <Protocol/PciRootBridgeIo.h>
 
@@ -29,7 +30,6 @@ typedef struct {
 #pragma pack ()
 
 STATIC EFI_PCI_ROOT_BRIDGE_DEVICE_PATH mEfiPciRootBridgeDevicePath[] = {
-  // PCIe
   {
     {
       {
@@ -41,7 +41,7 @@ STATIC EFI_PCI_ROOT_BRIDGE_DEVICE_PATH mEfiPciRootBridgeDevicePath[] = {
         }
       },
       EISA_PNP_ID (0x0A08), // PCIe
-      0
+      PCIE_SEGMENT_PCIE30X4
     },
     {
       END_DEVICE_PATH_TYPE,
@@ -51,50 +51,177 @@ STATIC EFI_PCI_ROOT_BRIDGE_DEVICE_PATH mEfiPciRootBridgeDevicePath[] = {
         0
       }
     }
-  }
-};
-
-
-STATIC PCI_ROOT_BRIDGE mPciRootBridge[] = {
+  },
   {
-    0,                                              // Segment
-    0,                                              // Supports
-    0,                                              // Attributes
-    TRUE,                                           // DmaAbove4G
-    FALSE,                                          // NoExtendedConfigSpace
-    FALSE,                                          // ResourceAssigned
-    EFI_PCI_HOST_BRIDGE_COMBINE_MEM_PMEM |          // AllocationAttributes
-    EFI_PCI_HOST_BRIDGE_MEM64_DECODE,
     {
-      // Bus
-      0x0,
-      0xf
-    }, {
-      // Io disable
-      0x0,//FixedPcdGet32 (PcdPcieRootPort3x4IoBaseAddress),
-      0x10000 - 1,//FixedPcdGet32 (PcdPcieRootPort3x4IoBaseAddress) + FixedPcdGet32 (PcdPcieRootPort3x4IoSize) - 1,
-      MAX_UINT64 - 0xffff0000 + 1
-    }, {
-      // Mem
-      FixedPcdGet32 (PcdPcieRootPort3x4MemBaseAddress),
-      FixedPcdGet32 (PcdPcieRootPort3x4MemBaseAddress) + FixedPcdGet32 (PcdPcieRootPort3x4MemSize) - 1
-    }, {
-      // MemAbove4G
-	 FixedPcdGet64 (PcdPcieRootPort3x4MemBaseAddress64),
-	 FixedPcdGet64 (PcdPcieRootPort3x4MemBaseAddress64) + FixedPcdGet64 (PcdPcieRootPort3x4MemSize64) - 1
-
-    }, {
-      // PMem
-      MAX_UINT64,
-      0
-    }, {
-      // PMemAbove4G
-      MAX_UINT64,
-      0
+      {
+        ACPI_DEVICE_PATH,
+        ACPI_DP,
+        {
+          (UINT8)sizeof (ACPI_HID_DEVICE_PATH),
+          (UINT8)(sizeof (ACPI_HID_DEVICE_PATH) >> 8)
+        }
+      },
+      EISA_PNP_ID (0x0A08), // PCIe
+      PCIE_SEGMENT_PCIE30X2
     },
-    (EFI_DEVICE_PATH_PROTOCOL *)&mEfiPciRootBridgeDevicePath[0]
-  }
+    {
+      END_DEVICE_PATH_TYPE,
+      END_ENTIRE_DEVICE_PATH_SUBTYPE,
+      {
+        END_DEVICE_PATH_LENGTH,
+        0
+      }
+    }
+  },
+  {
+    {
+      {
+        ACPI_DEVICE_PATH,
+        ACPI_DP,
+        {
+          (UINT8)sizeof (ACPI_HID_DEVICE_PATH),
+          (UINT8)(sizeof (ACPI_HID_DEVICE_PATH) >> 8)
+        }
+      },
+      EISA_PNP_ID (0x0A08), // PCIe
+      PCIE_SEGMENT_PCIE20L0
+    },
+    {
+      END_DEVICE_PATH_TYPE,
+      END_ENTIRE_DEVICE_PATH_SUBTYPE,
+      {
+        END_DEVICE_PATH_LENGTH,
+        0
+      }
+    }
+  },
+  {
+    {
+      {
+        ACPI_DEVICE_PATH,
+        ACPI_DP,
+        {
+          (UINT8)sizeof (ACPI_HID_DEVICE_PATH),
+          (UINT8)(sizeof (ACPI_HID_DEVICE_PATH) >> 8)
+        }
+      },
+      EISA_PNP_ID (0x0A08), // PCIe
+      PCIE_SEGMENT_PCIE20L1
+    },
+    {
+      END_DEVICE_PATH_TYPE,
+      END_ENTIRE_DEVICE_PATH_SUBTYPE,
+      {
+        END_DEVICE_PATH_LENGTH,
+        0
+      }
+    }
+  },
+  {
+    {
+      {
+        ACPI_DEVICE_PATH,
+        ACPI_DP,
+        {
+          (UINT8)sizeof (ACPI_HID_DEVICE_PATH),
+          (UINT8)(sizeof (ACPI_HID_DEVICE_PATH) >> 8)
+        }
+      },
+      EISA_PNP_ID (0x0A08), // PCIe
+      PCIE_SEGMENT_PCIE20L2
+    },
+    {
+      END_DEVICE_PATH_TYPE,
+      END_ENTIRE_DEVICE_PATH_SUBTYPE,
+      {
+        END_DEVICE_PATH_LENGTH,
+        0
+      }
+    }
+  },
 };
+
+// STATIC PCI_ROOT_BRIDGE mPciRootBridge[] = {
+//   {
+//     0,                                              // Segment
+//     0,                                              // Supports
+//     0,                                              // Attributes
+//     TRUE,                                           // DmaAbove4G
+//     FALSE,                                          // NoExtendedConfigSpace
+//     FALSE,                                          // ResourceAssigned
+//     EFI_PCI_HOST_BRIDGE_COMBINE_MEM_PMEM |          // AllocationAttributes
+//     EFI_PCI_HOST_BRIDGE_MEM64_DECODE,
+//     {
+//       // Bus
+//       0x0,
+//       0xf
+//     }, {
+//       // Io disable
+//       0x0,//FixedPcdGet32 (PcdPcieRootPort3x4IoBaseAddress),
+//       0x10000 - 1,//FixedPcdGet32 (PcdPcieRootPort3x4IoBaseAddress) + FixedPcdGet32 (PcdPcieRootPort3x4IoSize) - 1,
+//       MAX_UINT64 - 0xffff0000 + 1
+//     }, {
+//       // Mem
+//       FixedPcdGet32 (PcdPcieRootPort3x4MemBaseAddress),
+//       FixedPcdGet32 (PcdPcieRootPort3x4MemBaseAddress) + FixedPcdGet32 (PcdPcieRootPort3x4MemSize) - 1
+//     }, {
+//       // MemAbove4G
+// 	 FixedPcdGet64 (PcdPcieRootPort3x4MemBaseAddress64),
+// 	 FixedPcdGet64 (PcdPcieRootPort3x4MemBaseAddress64) + FixedPcdGet64 (PcdPcieRootPort3x4MemSize64) - 1
+
+//     }, {
+//       // PMem
+//       MAX_UINT64,
+//       0
+//     }, {
+//       // PMemAbove4G
+//       MAX_UINT64,
+//       0
+//     },
+//     (EFI_DEVICE_PATH_PROTOCOL *)&mEfiPciRootBridgeDevicePath[0]
+//   }
+// };
+
+PCI_ROOT_BRIDGE mPciRootBridges[NUM_PCIE_CONTROLLER];
+
+BOOLEAN
+IsPcieNumEnabled(
+  UINTN PcieNum
+  )
+{
+  BOOLEAN Enabled = FALSE;
+  switch (PcieNum)
+  {
+	/* No bifurcation config yet */
+	case PCIE_SEGMENT_PCIE30X4:
+		Enabled = TRUE;
+		break;
+
+	case PCIE_SEGMENT_PCIE30X2:
+		Enabled = FALSE;
+		break;
+
+	case PCIE_SEGMENT_PCIE20L0:
+		Enabled = (PcdGet32(PcdComboPhy0Mode) == 1); // COMBO_PHY_MODE_PCIE
+		break;
+
+	case PCIE_SEGMENT_PCIE20L1:
+		Enabled = (PcdGet32(PcdComboPhy1Mode) == 1); // COMBO_PHY_MODE_PCIE
+		break;
+
+	case PCIE_SEGMENT_PCIE20L2:
+		Enabled = (PcdGet32(PcdComboPhy2Mode) == 1); // COMBO_PHY_MODE_PCIE
+		break;
+
+	default:
+	break;
+  }
+
+  if(FixedPcdGetBool(PcdSocIs3588S) == TRUE && (PcieNum == PCIE_SEGMENT_PCIE30X4 || PcieNum == PCIE_SEGMENT_PCIE30X2))
+    Enabled = FALSE;
+  return Enabled;
+}
 
 /**
   Return all the root bridge instances in an array.
@@ -111,9 +238,49 @@ PciHostBridgeGetRootBridges (
   UINTN                             *Count
   )
 {
-  *Count = ARRAY_SIZE (mPciRootBridge);
   DEBUG((DEBUG_ERROR, "PciHostBridgeGetRootBridges\n"));
-  return mPciRootBridge;
+  UINTN         Idx;
+  UINTN         Loop;
+  for(Idx = 0, Loop = 0; Idx < NUM_PCIE_CONTROLLER; Idx++) {
+    if(IsPcieNumEnabled(Idx) == FALSE)
+      continue;
+
+    mPciRootBridges[Loop].Segment               = Idx;
+    mPciRootBridges[Loop].Supports              = 0;
+    mPciRootBridges[Loop].Attributes            = 0;
+    mPciRootBridges[Loop].DmaAbove4G            = TRUE;
+    mPciRootBridges[Loop].NoExtendedConfigSpace = FALSE;
+    mPciRootBridges[Loop].ResourceAssigned      = FALSE;
+    mPciRootBridges[Loop].AllocationAttributes  = EFI_PCI_HOST_BRIDGE_COMBINE_MEM_PMEM|EFI_PCI_HOST_BRIDGE_MEM64_DECODE;
+
+    mPciRootBridges[Loop].Bus.Base              = 0x0;
+    mPciRootBridges[Loop].Bus.Limit             = 0xf;
+
+    mPciRootBridges[Loop].Io.Base               = 0x0;
+    mPciRootBridges[Loop].Io.Limit              = 0x10000 - 1;
+    mPciRootBridges[Loop].Io.Translation        = MAX_UINT64 -
+                                                  0xffff*Idx + 1;
+
+    mPciRootBridges[Loop].Mem.Base              = PCIE_SEG0_CFG_BASE + Idx*PCIE_CFG_BASE_DIFF + PCIE_MEM_OFFSET;
+    mPciRootBridges[Loop].Mem.Limit             = mPciRootBridges[Loop].Mem.Base + PCIE_MEM_SIZE - 1;
+
+    mPciRootBridges[Loop].MemAbove4G.Base       = PCIE_SEG0_MEM64_BASE + Idx*PCIE_MEM64_SIZE + 0x1000000;
+    mPciRootBridges[Loop].MemAbove4G.Limit      = PCIE_SEG0_MEM64_BASE + Idx*PCIE_MEM64_SIZE - 1;
+
+    mPciRootBridges[Loop].PMem.Base             = MAX_UINT64;
+    mPciRootBridges[Loop].PMem.Limit            = 0;
+    mPciRootBridges[Loop].PMemAbove4G.Base      = MAX_UINT64;
+    mPciRootBridges[Loop].PMemAbove4G.Limit     = 0;
+    mPciRootBridges[Loop].DevicePath            = (EFI_DEVICE_PATH_PROTOCOL *)&mEfiPciRootBridgeDevicePath[Idx];
+    
+    DEBUG((DEBUG_ERROR, "0x%llx 0x%llx\n", mPciRootBridges[Loop].Mem.Base, mPciRootBridges[Loop].MemAbove4G.Base));
+    Loop++;
+  }
+  
+  *Count = Loop;
+  if(Loop == 0) return NULL;
+
+  return mPciRootBridges;
 }
 
 /**

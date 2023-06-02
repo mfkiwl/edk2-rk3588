@@ -284,9 +284,11 @@
   gRK3588TokenSpaceGuid.PcdComboPhy0Switchable|FALSE
   gRK3588TokenSpaceGuid.PcdComboPhy1Switchable|FALSE
   gRK3588TokenSpaceGuid.PcdComboPhy2Switchable|FALSE
-  gRK3588TokenSpaceGuid.PcdComboPhy0ModeDefault|$(COMBO_PHY_MODE_PCIE)
-  gRK3588TokenSpaceGuid.PcdComboPhy1ModeDefault|$(COMBO_PHY_MODE_UNCONNECTED)
+  gRK3588TokenSpaceGuid.PcdComboPhy0ModeDefault|$(COMBO_PHY_MODE_UNCONNECTED)
+  gRK3588TokenSpaceGuid.PcdComboPhy1ModeDefault|$(COMBO_PHY_MODE_PCIE)
   gRK3588TokenSpaceGuid.PcdComboPhy2ModeDefault|$(COMBO_PHY_MODE_USB3)
+
+  gRK3588TokenSpaceGuid.PcdSocIs3588S|TRUE
 
   #  BIT0  - Initialization message.<BR>
   #  BIT1  - Warning message.<BR>

@@ -292,6 +292,8 @@
   gRK3588TokenSpaceGuid.PcdComboPhy1ModeDefault|$(COMBO_PHY_MODE_UNCONNECTED)
   gRK3588TokenSpaceGuid.PcdComboPhy2ModeDefault|$(COMBO_PHY_MODE_USB3)
 
+  gRK3588TokenSpaceGuid.PcdSocIs3588S|FALSE
+
   #  BIT0  - Initialization message.<BR>
   #  BIT1  - Warning message.<BR>
   #  BIT2  - Load Event message.<BR>
